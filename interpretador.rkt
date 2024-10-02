@@ -54,6 +54,13 @@
     (expresion
       ( primitiva-unaria "("expresion ")")
            primapp-un-exp)
+    (expresion
+      ("Si" expresion "{" expresion "}" "sino" "{" expresion "}")
+        condicional-exp)
+
+    (expresion
+      ("declarar" "(" (arbno identificador "=" expresion ";") ")" "{" expresion "}")
+        variableLocal-exp)
     
 ;; Primitivas binarias
     (primitiva-binaria ("+") primitiva-suma)
@@ -129,7 +136,21 @@
                        (apply-primitiva-bin (eval-rand rand1 env) prim (eval-rand rand2 env)))
       (primapp-un-exp (prim exp)
                      (apply-primitiva-un prim (eval-rand exp env)))
+      
+      (condicional-exp (test true false)
+                       (if (true-value? (eval-expresion test env))
+                           (eval-expresion true env)
+                           (eval-expresion false env)))
+
+      (variableLocal-exp (ids exps cuerpo)
+                         (let ((args (eval-rands exps env)))
+                           (eval-expresion cuerpo
+                                           (extend-env ids args env))))
       )))
+
+(define eval-rands
+  (lambda (rands env)
+    (map (lambda (x) (eval-rand x env)) rands)))
 
 (define eval-rand
   (lambda (rand env)
@@ -143,12 +164,12 @@
       (primitiva-div () (/ rand1 rand2))
       (primitiva-multi () (* rand1 rand2))
       (primitiva-concat () (string-append rand1 rand2))
-      (primitiva-mayor () (> rand1 rand2))
-      (primitiva-menor () (< rand1 rand2))
-      (primitiva-mayor-igual () (>= rand1 rand2))
-      (primitiva-menor-igual () (<= rand1 rand2))
-      (primitiva-diferente () (not(eqv? rand1 rand2)))
-      (primitiva-comparador-igual () (eqv? rand1 rand2))
+      (primitiva-mayor () (if (> rand1 rand2) 1 0))
+      (primitiva-menor () (if (< rand1 rand2) 1 0))
+      (primitiva-mayor-igual () (if (>= rand1 rand2) 1 0))
+      (primitiva-menor-igual () (if (<= rand1 rand2) 1 0))
+      (primitiva-diferente () (if (not (eqv? rand1 rand2)) 1 0))
+      (primitiva-comparador-igual () (if (eqv? rand1 rand2) 1 0))
       )))
 
 (define apply-primitiva-un
