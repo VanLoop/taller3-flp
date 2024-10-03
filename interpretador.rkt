@@ -61,6 +61,17 @@
     (expresion
       ("declarar" "(" (arbno identificador "=" expresion ";") ")" "{" expresion "}")
         variableLocal-exp)
+
+    (expresion
+     ("procedimiento" "(" (arbno identificador "," ) ")" "{" expresion "}")
+      procedimiento-ex)
+
+    (expresion
+      ("evaluar" expresion "(" (arbno expresion ",") ")" "finEval")
+        app-exp)
+
+    (expresion ("letrec" (arbno identificador "(" (separated-list identificador ",") ")" "=" expresion)  "in" expresion) 
+                letrec-exp)
     
 ;; Primitivas binarias
     (primitiva-binaria ("+") primitiva-suma)
@@ -82,6 +93,16 @@
     (primitiva-unaria ("neg") primitiva-negacion-booleana)
     
     ))
+
+
+
+;; Definicion de procVal
+(define-datatype procVal procVal?
+  (cerradura (lista-ID (list-of symbol?))
+             (exp expresion?)
+             (amb environment?)
+             )
+  )
 
 
 ;; Se usa sllgen para construir los datatypes
@@ -146,6 +167,22 @@
                          (let ((args (eval-rands exps env)))
                            (eval-expresion cuerpo
                                            (extend-env ids args env))))
+
+      (procedimiento-ex (ids cuerpo)
+                        (cerradura ids cuerpo env))
+
+      (app-exp (proc-expr arg-exprs)
+               (let* ((proc-val (eval-expresion proc-expr env))  
+                      (evaluated-args (eval-rands arg-exprs env)))
+                 (cases procVal proc-val
+                   (cerradura (ids cuerpo closure-env)
+                             
+                              (let ((extended-env (extend-env ids evaluated-args closure-env)))
+                                (eval-expresion cuerpo extended-env))))))
+
+      (letrec-exp (proc-names idss bodies letrec-body)
+                  (eval-expresion letrec-body
+                                   (extend-env-recursively proc-names idss bodies env)))
       )))
 
 (define eval-rands
@@ -195,8 +232,11 @@
   (empty-env-record)
   (extended-env-record (syms (list-of symbol?))
                        (vals (list-of scheme-value?))
-
-                       (env environment?)))
+                       (env environment?))
+  (recursively-extended-env-record (proc-names (list-of symbol?))
+                                   (idss (list-of (list-of symbol?)))
+                                   (bodies (list-of expresion?))
+                                   (env environment?)))
 
 (define scheme-value? (lambda (v) #t))
 
@@ -211,19 +251,34 @@
 ;función que crea un ambiente extendido
 (define extend-env
   (lambda (syms vals env)
-    (extended-env-record syms vals env))) 
+    (extended-env-record syms vals env)))
+
+;extend-env-recursively: <list-of symbols> <list-of <list-of symbols>> <list-of expressions> environment -> environment
+;función que crea un ambiente extendido para procedimientos recursivos
+(define extend-env-recursively
+  (lambda (proc-names idss bodies old-env)
+    (recursively-extended-env-record
+     proc-names idss bodies old-env)))
 
 ;función que busca un símbolo en un ambiente
 (define apply-env
   (lambda (env sym)
     (cases environment env
       (empty-env-record ()
-                        (eopl:error 'apply-env "No binding for ~s" sym))
-      (extended-env-record (syms vals env)
+                        (eopl:error 'empty-env "No binding for ~s" sym))
+      (extended-env-record (syms vals old-env)
                            (let ((pos (list-find-position sym syms)))
                              (if (number? pos)
                                  (list-ref vals pos)
-                                 (apply-env env sym)))))))
+                                 (apply-env old-env sym))))
+      (recursively-extended-env-record (proc-names idss bodies old-env)
+                                       (let ((pos (list-find-position sym proc-names)))
+                                         (if (number? pos)
+                                             (cerradura (list-ref idss pos)
+                                                      (list-ref bodies pos)
+                                                      env)
+                                             (apply-env old-env sym)))))))
+
 
 
 ;****************************************************************************************
@@ -247,7 +302,8 @@
                 #f))))))
 
       
-  
+ ;;;Pruebas:
 
+;; declarar(@x=2;@y=3;@a=procedimiento (@x,@y,@z,) {((@x+@y)+@z)};) { evaluar @a (1,2,@x,) finEval}
 
       
