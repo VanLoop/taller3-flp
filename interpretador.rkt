@@ -1,4 +1,10 @@
 #lang eopl
+
+;; Integrantes:
+;; David Urrego - 2240407
+;; Juan Jose Bolaños - 1942124
+
+
 ;******************************************************************************************
 ;;;;; Interpretador para lenguaje para el taller 3 ;;;;;;;;;;;
 
@@ -70,8 +76,11 @@
       ("evaluar" expresion "(" (arbno expresion ",") ")" "finEval")
         app-exp)
 
-    (expresion ("letrec" (arbno identificador "(" (separated-list identificador ",") ")" "=" expresion)  "in" expresion) 
+    (expresion
+     ("letrec" (arbno identificador "(" (separated-list identificador ",") ")" "=" expresion)  "in" expresion) 
                 letrec-exp)
+
+ 
     
 ;; Primitivas binarias
     (primitiva-binaria ("+") primitiva-suma)
@@ -183,6 +192,8 @@
       (letrec-exp (proc-names idss bodies letrec-body)
                   (eval-expresion letrec-body
                                    (extend-env-recursively proc-names idss bodies env)))
+
+
       )))
 
 (define eval-rands
@@ -233,10 +244,12 @@
   (extended-env-record (syms (list-of symbol?))
                        (vals (list-of scheme-value?))
                        (env environment?))
+
   (recursively-extended-env-record (proc-names (list-of symbol?))
                                    (idss (list-of (list-of symbol?)))
                                    (bodies (list-of expresion?))
-                                   (env environment?)))
+                                   (env environment?))
+  )
 
 (define scheme-value? (lambda (v) #t))
 
@@ -253,12 +266,12 @@
   (lambda (syms vals env)
     (extended-env-record syms vals env)))
 
-;extend-env-recursively: <list-of symbols> <list-of <list-of symbols>> <list-of expressions> environment -> environment
 ;función que crea un ambiente extendido para procedimientos recursivos
 (define extend-env-recursively
   (lambda (proc-names idss bodies old-env)
     (recursively-extended-env-record
      proc-names idss bodies old-env)))
+
 
 ;función que busca un símbolo en un ambiente
 (define apply-env
@@ -271,13 +284,15 @@
                              (if (number? pos)
                                  (list-ref vals pos)
                                  (apply-env old-env sym))))
+
       (recursively-extended-env-record (proc-names idss bodies old-env)
                                        (let ((pos (list-find-position sym proc-names)))
                                          (if (number? pos)
                                              (cerradura (list-ref idss pos)
                                                       (list-ref bodies pos)
                                                       env)
-                                             (apply-env old-env sym)))))))
+                                             (apply-env old-env sym))))
+  )))
 
 
 
@@ -305,5 +320,31 @@
  ;;;Pruebas:
 
 ;; declarar(@x=2;@y=3;@a=procedimiento (@x,@y,@z,) {((@x+@y)+@z)};) { evaluar @a (1,2,@x,) finEval}
+
+
+;; -----#### Parte que se evalua del taller ####-------------
+
+;; a) @sumarDigitos
+;; declarar(@sumarDigitos=procedimiento (@x,@y,@z,) {((@x+@y)+@z)};) { evaluar @sumarDigitos (1,4,7,) finEval}
+
+;; b) factorial de 5
+;; letrec @fact (@x) = Si (@x == 0) {1} sino {(@x * evaluar @fact (sub1(@x),) finEval)} in evaluar @fact (5,) finEval
+;; factorial de 10
+;; letrec @fact (@x) = Si (@x == 0) {1} sino {(@x * evaluar @fact (sub1(@x),) finEval)} in evaluar @fact (10,) finEval
+
+;; C) procedimiento potencia
+;; letrec @potencia (@b, @e) = Si (@e == 0) {1} sino {(@b * evaluar @potencia (@b,sub1(@e),) finEval)} in evaluar @potencia (5, 2,) finEval
+
+;; D) sumarango
+;; letrec @sumaRango(@i, @j) = Si (@i == @j) {@j} sino {(@i + evaluar @sumaRango (add1(@i),@j,) finEval)} in evaluar @sumaRango (2, 5,) finEval
+
+;; E) Decorate
+
+;; declarar(@integrantes = procedimiento () { "jose y david "};
+;;            @saludar = procedimiento (@int,) {("hola: " concat evaluar @int () finEval)}; )
+;;           { declarar(@decorate = procedimiento () {evaluar @saludar (@integrantes,) finEval};)
+;;              {evaluar @decorate () finEval}}
+
+
 
       
