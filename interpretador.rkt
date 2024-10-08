@@ -31,7 +31,17 @@
 ;******************************************************************************************
  
 ;******************************************************************************************
-;Especificación Léxica
+;la especifiación léxica queda parecida a la que da por defecto
+;eopl con la excepción de los nombres y en este caso el nuevo tipo de dato para
+;que identifique el scanner, "texto", se decidió manejar esta definición con el interpretador
+; porque eopl también la utiliza eventualmente, esto a pesar que el "construct" del dato
+; texto los crea con las barras pero aún así permite manejar los valores de entrada normalmente
+; con las comillas.
+; También es aquí donde se define que el scanner identifique los tokens que empiecen con @ como identificadores.
+
+;; ------------------------------------------------------------------------------------------
+
+;;Especificación Léxica
 
 (define scanner-spec-simple-interpreter
 '((white-sp
@@ -46,6 +56,19 @@
    ("-" digit (arbno digit)) number)
    (texto
      ("\"" (arbno (not #\")) "\"") string)))
+
+
+;; -------------------------------------------------------------------------
+;; Luego viene la gramatica, la cual, al igual que la definición léxica
+;; es utilizada para procesar el texto que se escribe en el lenguaje de
+;; programación, está gramática define de hecho cómo deben ser escritos
+;; los tipos de datos y las funcionalidades del lenguaje. aquí de define
+;; cómo se define una función, una variable o un condicional, de lo contrario
+;; el texto se procesa como erroneo, se pueden manejar estas excepciones con
+;; eopl error para que el programador sepa con exactitud dónde está el problema
+;; y no vea la implementación del lenguaje fuera de la interfaz.
+;; hay que ser cuidadoso con las definiciones porque si las especificaciones gramaticales
+;; son muy parecidas pueden confundir el parser y dar un error de parseo.
 
 ;; Definicion sintactica (Gramatica)
 
@@ -152,8 +175,18 @@
   (lambda ()
     (extend-env
      '(@a @b @c @d @e)
-     '(1 2 3 "hola" "FLP")
+     '(1 2 3 "hola" "FLP") ;Se crea con los valores pedidos
      (empty-env))))
+
+;; esta es otra sección importante pues una vez el interpretador recibe el código y el scanner
+; y determina que el código es valido ejecuta el código para evaluar la expresión que acabó
+; de confirmar correcta, esto se ejecuta con los casos de el procedimiento eval-expresion
+; o cualquiera que se defina para esto, aquí ve en qué caso cae la entrada, esto es con
+; cases debido a que sllgen define los datos como datatype, e igual en racket esa es una
+; buena forma aunque fuera manual.
+
+; El procedimiento eval-expresion utiliza el lenguaje de implementación para operar
+; los valores de entrada, por eso se utiliza el código de Racket para dichas funciones.
 
 ;; eval-expresion:
 (define eval-expresion
@@ -345,6 +378,11 @@
 ;;           { declarar(@decorate = procedimiento () {evaluar @saludar (@integrantes,) finEval};)
 ;;              {evaluar @decorate () finEval}}
 
+;; F) decorate modificado
 
+;declarar(@integrantes = procedimiento () { "jose y david "};
+;            @saludar = procedimiento (@int,) {("hola: " concat evaluar @int () finEval)}; )
+;          { declarar(@decorate = procedimiento (@profs,) {(evaluar @saludar (@integrantes,) finEval concat @profs)};)
+;              {evaluar @decorate (" profesores flp",) finEval}}
 
       
